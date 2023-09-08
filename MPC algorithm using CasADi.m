@@ -228,7 +228,7 @@ while (mpciter < sim_tim / dT && mpciter<maxreps)
     
     
     t(mpciter+1) = t0;
-    % Äu constraints
+    % Ã„u constraints
 %     if mpciter==0
 %         uprev=1;
 %     else
