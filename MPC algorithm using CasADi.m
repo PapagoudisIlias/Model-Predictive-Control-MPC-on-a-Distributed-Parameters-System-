@@ -96,12 +96,6 @@ Q=diag([qd]);
 R=[10];
 
 
-% for k=1:N
-%     st = X(:,k);  con = U(:,k);
-%     obj = obj+(st-P(n_states+1:2*n_states))'*Q*(st-P(n_states+1:2*n_states)) + (con-1)'*R*(con-1); % calculate obj
-% end
-
-
 %Objective function
 for k=1:N
     st = X(:,k);  
@@ -150,25 +144,9 @@ x0 = ones(n_states,1);
 xs=zeros(n_states,1);
 
 
-%Reference trajectories
+%Reference temperatures
 
-%exp(-t) u=1
 xs(1)=1;xs((mm-1)/4+1)=0.778801; xs((mm-1)/2+1)=0.606531; xs(3*(mm-1)/4+1)=0.472367;xs(mm)=0.367879;
-
-
-
-
-%exp(-3t) min(u)=0.23
-%xs(1)=1;xs((mm-1)/4+1)=0.472367; xs((mm-1)/2+1)=0.22313; xs(3*(mm-1)/4+1)=0.105399;xs(mm)=0.0497871;
-
-%exp(-0.5t) max(u)=2.1
-%xs(1)=1;xs((mm-1)/4+1)=0.882497; xs((mm-1)/2+1)=0.778801; xs(3*(mm-1)/4+1)=0.687289;xs(mm)=0.606531;
-
-%xs(1)=1;xs((mm-1)/4+1)=0.76; xs((mm-1)/2+1)=0.59; xs(3*(mm-1)/4+1)=0.44;xs(mm)=0.35;
-
-
- %xs(1)=1;xs((mm-1)/4+1)=0.8; xs((mm-1)/2+1)=0.63; xs(3*(mm-1)/4+1)=0.5;xs(mm)=0.4;
-%xs(1)=1;xs((mm-1)/4+1)=0.846482; xs((mm-1)/2+1)=0.716531; xs(3*(mm-1)/4+1)=0.606531;xs(mm)=0.513417;
 
 
 
@@ -177,7 +155,7 @@ t(1) = t0;
 
 u0 = ones(Nc,1);
 
-sim_tim = 6; % Maximum simulation time
+sim_tim = 10; % Maximum simulation time
 
 
 % Start MPC
@@ -209,16 +187,14 @@ while (mpciter < sim_tim / dT && mpciter<maxreps)
             'lbg', args.lbg, 'ubg', args.ubg,'p',args.p);    
     u=full(sol.x);
     
-    %Noise in control action
+    %In case artificial noise in control action is needed
 %     ra=normrnd(0,sigma);
 %     u(1)=u(1)+ra;
 %     if u(1)<0.9 | u(1)>1.1
 %         u(1)=u(1)-ra;
 %     end
 
-%For input u=1
-    %u(1)=1;
- %For first control u=1
+ %In case the first control must be u=1
 %     if mpciter==0
 %         u(1)=1;
 %     end
@@ -228,7 +204,7 @@ while (mpciter < sim_tim / dT && mpciter<maxreps)
     
     
     t(mpciter+1) = t0;
-    % Äu constraints
+    % In case Δu constraints are needed (Δu = u(t+1)-u(t))
 %     if mpciter==0
 %         uprev=1;
 %     else
@@ -245,7 +221,7 @@ while (mpciter < sim_tim / dT && mpciter<maxreps)
     
     [t0, x0, u0] = shift_DPS_bigdt_RK4(mpc_dT,dT, t0, x0, u,f,sigma);
     
-    %Noise in measurement
+    %In case artificial noise in measurements is needed we add white noise
 %     x0((mm-1)/4+1)=x0((mm-1)/4+1)+normrnd(0,sigma);
 %     x0((mm-1)/2+1)=x0((mm-1)/2+1)+normrnd(0,sigma);
 %     x0(3*(mm-1)/4+1)=x0(3*(mm-1)/4+1)+normrnd(0,sigma);
@@ -268,12 +244,8 @@ main_loop_time = toc(main_loop)
 avg_loop_time=main_loop_time/maxreps
 disp(' ')
     output=norm([x0(1);x0((mm-1)/4+1);x0((mm-1)/2+1);x0(3*(mm-1)/4+1);x0(mm)]-[xs(1);xs((mm-1)/4+1);xs((mm-1)/2+1);xs(3*(mm-1)/4+1);xs(mm)]);
-    %refer=norm([xs(1);xs(round(m/4));xs(round(m/2));xs(round(3*m/4));xs(m)]);
     refer=norm([xs(1);xs((mm-1)/4+1);xs((mm-1)/2+1);xs(3*(mm-1)/4+1);xs(mm)]);
     disp(['The error is ',num2str(output/refer*100),' %'])
-    %(x0-xs)'*Q*(x0-xs)
-    %norm([x0(1);x0(round(m/4));x0(round(m/2));x0(round(3*m/4));x0(m)]-[xs(1);xs(round(m/4));xs(round(m/2));xs(round(3*m/4));xs(m)])/
-    %norm([xs(1);xs(round(m/4));xs(round(m/2));xs(round(3*m/4));xs(m)])*100
     [ [x0(1);x0((mm-1)/4+1);x0((mm-1)/2+1);x0(3*(mm-1)/4+1);x0(mm)],[xs(1);xs((mm-1)/4+1);xs((mm-1)/2+1);xs(3*(mm-1)/4+1);xs(mm)]]
 figure(1)
 t=0:mpc_dT:maxreps*mpc_dT-mpc_dT;
@@ -298,8 +270,7 @@ for n=1:leny/n_states-1
     xlabel('ramplength')
     ylabel('Temperature')
     ylim([0 1])
-%     title(['t = ',num2str((n-1)*dT)])
-    %drawnow
+
     movieVector(n) = getframe;
     pause(0.1)
 end
